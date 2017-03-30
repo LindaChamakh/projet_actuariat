@@ -14,7 +14,7 @@ sigma_x = 0.008;
 mu_a = 0.04;
 sigma_a = 0.06;
 //Correlation
-rho = 0.5;
+rho_xr = 0.;
 rho_as = 0.95;
 rho_ar = 0.25;
 //Parametres taux de rachat
@@ -68,8 +68,8 @@ j = 1;
 for l=1:(M_1-1)*(M_2-1)
     //disp(i)
     //disp(j)
-    A(l,l) = 1/dt + k_r*(r_inf-r(j))*0.5/dr + k_x*(x_inf-x(i))*0.5/dx + sigma_r*sigma_r*0.5/(dr*dr) + sigma_x*sigma_x*0.5/(dx*dx) + rho*sigma_x*sigma_r/dx/dr - 0.5*(f(x(i),r(j),TMG)-r(j)-g(i));
-    B(l,l) = 1/dt - k_r*(r_inf-r(j))*0.5/dr - k_x*(x_inf-x(i))*0.5/dx - sigma_r*sigma_r*0.5/(dr*dr) - sigma_x*sigma_x*0.5/(dx*dx) - rho*sigma_x*sigma_r/dx/dr + 0.5*(f(x(i),r(j),TMG)-r(j)-g(i));
+    A(l,l) = 1/dt + k_r*(r_inf-r(j))*0.5/dr + k_x*(x_inf-x(i))*0.5/dx + sigma_r*sigma_r*0.5/(dr*dr) + sigma_x*sigma_x*0.5/(dx*dx) + rho_xr*sigma_x*sigma_r/dx/dr - 0.5*(f(x(i),r(j),TMG)-r(j)-g(i));
+    B(l,l) = 1/dt - k_r*(r_inf-r(j))*0.5/dr - k_x*(x_inf-x(i))*0.5/dx - sigma_r*sigma_r*0.5/(dr*dr) - sigma_x*sigma_x*0.5/(dx*dx) - rho_xr*sigma_x*sigma_r/dx/dr + 0.5*(f(x(i),r(j),TMG)-r(j)-g(i));
     if j > 1
         //disp(l)
         A(l,l-M_1+1) = - sigma_r*sigma_r*0.25/dr/dr;
@@ -80,16 +80,16 @@ for l=1:(M_1-1)*(M_2-1)
         B(l,l-1) = sigma_x*sigma_x*0.25/dx/dx;
     end
     if  i < M_1-1
-        A(l,l+1) = - sigma_x*sigma_x*0.25/dx/dx -k_x*(x_inf-x(i))*0.5/dx - rho*sigma_x*sigma_r/dx/dr;
-        B(l,l+1) = sigma_x*sigma_x*0.25/dx/dx + k_x*(x_inf-x(i))*0.5/dx + rho*sigma_x*sigma_r/dx/dr;
+        A(l,l+1) = - sigma_x*sigma_x*0.25/dx/dx -k_x*(x_inf-x(i))*0.5/dx - rho_xr*sigma_x*sigma_r/dx/dr;
+        B(l,l+1) = sigma_x*sigma_x*0.25/dx/dx + k_x*(x_inf-x(i))*0.5/dx + rho_xr*sigma_x*sigma_r/dx/dr;
     end
     if j < M_2-1
-        A(l,l+M_1-1) = - sigma_r*sigma_r*0.25/dr/dr -k_r*(r_inf-r(j))*0.5/dr - rho*sigma_x*sigma_r/dx/dr;
-        B(l,l+M_1-1) =  sigma_r*sigma_r*0.25/dr/dr + k_r*(r_inf-r(j))*0.5/dr + rho*sigma_x*sigma_r/dx/dr;
+        A(l,l+M_1-1) = - sigma_r*sigma_r*0.25/dr/dr -k_r*(r_inf-r(j))*0.5/dr - rho_xr*sigma_x*sigma_r/dx/dr;
+        B(l,l+M_1-1) =  sigma_r*sigma_r*0.25/dr/dr + k_r*(r_inf-r(j))*0.5/dr + rho_xr*sigma_x*sigma_r/dx/dr;
     end
     if j < M_2-1 & i < M_1-1
-        A(l,l+M_1) = rho*sigma_x*sigma_r/dx/dr;
-        B(l,l+M_1) = -rho*sigma_x*sigma_r/dx/dr;
+        A(l,l+M_1) = rho_xr*sigma_x*sigma_r/dx/dr;
+        B(l,l+M_1) = -rho_xr*sigma_x*sigma_r/dx/dr;
     end
     i=i+1;
     if l == j*(M_1-1)
@@ -117,7 +117,7 @@ M=10000;//taille échantillon Monte Carlo
 A_0 = 101479200;//ACTIF: obligations, actions, immobilier à t=0
 E_0 = 57238200;//PASSIF: dettes vis-à-vis des actionnaires
 //L0 = ;//PASSIF: dettes vis-à-vis des assurés //INUTILE
-P = 1;
+P = 100000000;
 
 
 //Deux gaussiennes indépendantes
@@ -127,8 +127,8 @@ Ga = rand(M,1,"normal");
 
 //Modélisation des dynamiques r_1 et x_1
 r_1 = r_0*exp(-k_r) + r_inf*(1-exp(-k_r)) + sigma_r*sqrt((1-exp(-2*k_r))/(2*k_r))*Gr;
-x_1 = x_0*exp(-k_x) + x_inf*(1-exp(-k_x)) + sigma_x*sqrt((1-exp(-2*k_x))/(2*k_x))*((rho_sa/sqrt(1-rho_ar*rho_ar))*Ga + sqrt((1-rho_ar**2- rho_as**2)/(1-rho_ar*rho_ar))*Gx);
-R_1 = mu_a + rho_ar*sigma_a*Gr + sqrt(1-rho_ar**2)*sigma_a*Ga
+x_1 = x_0*exp(-k_x) + x_inf*(1-exp(-k_x)) + sigma_x*sqrt((1-exp(-2*k_x))/(2*k_x))*((rho_as/sqrt(1-rho_ar*rho_ar))*Ga + sqrt((1-rho_ar**2- rho_as**2)/(1-rho_ar*rho_ar))*Gx);
+R_1 = mu_a + rho_ar*sigma_a*Gr + sqrt(1-rho_ar**2)*sigma_a*Ga;
 A_1 = A_0*(1 + R_1);
 
 //Calcul de BE
@@ -146,16 +146,21 @@ for i=1:M
     end
 end
 
+//Affichage de la moyenne et de l'écart type de BE
+mprintf("Moyenne = %f \n Ecart type = %f \n",mean(BE),stdev(BE));
+
 //Calcul de E_1
 E_1 = A_1 - BE - P*g_0; 
 
 //Calcul de L
-L = exp(-r_1).*E_1;
+L = exp(-r_0).*E_1;
 
 //Statistique d'ordre de L (trier L)
 L = gsort(L,'g','i');
+mprintf("VaR = %f \n",L(ceil(N*0.95)));
 
 //Calcul de SCR_0
 SCR_0 = E_0 - L(ceil(N*0.95));
+mprintf("SCR_0 = %f \n",SCR_0);
 
  
