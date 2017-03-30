@@ -10,8 +10,13 @@ k_x = 0.3;
 x_inf = -0.01;
 x_0 = 0.02;
 sigma_x = 0.008;
+//Log return of the asser
+mu_a = 0.04;
+sigma_a = 0.06;
 //Correlation
 rho = 0.5;
+rho_as = 0.95;
+rho_ar = 0.25;
 //Parametres taux de rachat
 alpha = -0.05;
 beta_ = -0.01;
@@ -49,7 +54,7 @@ r = linspace(a_r + dr,b_r - dr,M_2-1);
 
 //foncton f et g
 deff('[x]=f(x,r,TMG)','x = max(x+r,TMG)');
-g = mu_i + eta*x';
+g = mu_i + eta*max((-x)',0);
 
 //vecteur contenant la solution au temps actuel et au temps précédent
 phi_prec = ones((M_1-1)*(M_2-1),1);//cond initiale
@@ -112,16 +117,19 @@ M=10000;//taille échantillon Monte Carlo
 A_0 = 101479200;//ACTIF: obligations, actions, immobilier à t=0
 E_0 = 57238200;//PASSIF: dettes vis-à-vis des actionnaires
 //L0 = ;//PASSIF: dettes vis-à-vis des assurés //INUTILE
-P = 100000000
+P = 1;
 
 
 //Deux gaussiennes indépendantes
-G1 = rand(M,1,"normal");
-G2 = rand(M,1,"normal");
+Gr = rand(M,1,"normal");
+Gx = rand(M,1,"normal");
+Ga = rand(M,1,"normal");
 
 //Modélisation des dynamiques r_1 et x_1
-r_1 = r_0*exp(-k_r) + r_inf*(1-exp(-k_r)) + sigma_r*sqrt((1-exp(-2*k_r))/(2*k_r))*G1;
-x_1 = x_0*exp(-k_x) + x_inf*(1-exp(-k_x)) + sigma_x*sqrt((1-exp(-2*k_x))/(2*k_x))*(rho*G1 + sqrt(1-rho*rho)*G2);
+r_1 = r_0*exp(-k_r) + r_inf*(1-exp(-k_r)) + sigma_r*sqrt((1-exp(-2*k_r))/(2*k_r))*Gr;
+x_1 = x_0*exp(-k_x) + x_inf*(1-exp(-k_x)) + sigma_x*sqrt((1-exp(-2*k_x))/(2*k_x))*((rho_sa/sqrt(1-rho_ar*rho_ar))*Ga + sqrt((1-rho_ar**2- rho_as**2)/(1-rho_ar*rho_ar))*Gx);
+R_1 = mu_a + rho_ar*sigma_a*Gr + sqrt(1-rho_ar**2)*sigma_a*Ga
+A_1 = A_0*(1 + R_1);
 
 //Calcul de BE
 BE = zeros(M,1);
@@ -139,7 +147,7 @@ for i=1:M
 end
 
 //Calcul de E_1
-E_1 = A_0 + A_0.*r_1 - BE - P*g_0; 
+E_1 = A_1 - BE - P*g_0; 
 
 //Calcul de L
 L = exp(-r_1).*E_1;
