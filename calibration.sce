@@ -1,5 +1,4 @@
 [fd,SST,Sheetnames,Sheetpos] = xls_open('STTI2013_base.xls')
-//Users/lindachamakh/Documents/3A_MAF/actuariat/documents/
 
 [Value,TextInd] = xls_read(fd,Sheetpos(1))
 
@@ -11,7 +10,7 @@ R = Value'
 
 mclose(fd)
 
-//delete first row and first column
+//suppression des premières ligne et colone
 R(1,:) = []
 R(:,1) = []
 
@@ -42,6 +41,7 @@ step = 0.5
 
 function [tau_min, taux_courts] = recherche_tau_opt(R, tau_init, tau_final, step)
     
+    nb_de_termes  = length(R(1,:))
     //create for each t, parameters mu_1, mu_2, mu_3
     tau_tab = []
     erreur_quadra_tab = []
@@ -55,9 +55,9 @@ function [tau_min, taux_courts] = recherche_tau_opt(R, tau_init, tau_final, step
         phi_tab = []
         psi_tab = []
         
-        for T=1:nb_of_terms
-            [psiT] = psi(T/tau)
-            [phiT] = phi(T/tau)
+        for T=1:nb_de_termes
+            psiT = psi(T/tau)
+            phiT = phi(T/tau)
             psi_tab = [psi_tab; psiT]
             phi_tab = [phi_tab; phiT]
         end
@@ -80,9 +80,33 @@ function [tau_min, taux_courts] = recherche_tau_opt(R, tau_init, tau_final, step
         
  
     end    
-    //plot(tau_tab, erreur_quadra_tab)
+    //plot2d(tau_tab, erreur_quadra_tab)
+    //xtitle('Calibration de tau_1', 'tau_1', 'Erreur globale')
+    
 endfunction
 
+
+function plotNSvsReel(R, tau, t)
+    phi_tab = []
+    psi_tab = []
+    for T=1:nb_de_termes
+        psiT = psi(T/tau)
+        phiT = phi(T/tau)
+        psi_tab = [psi_tab; psiT]
+        phi_tab = [phi_tab; phiT]
+    end
+    //regression linéaire de R(t,T) T=1...nb_of_terms sur 1, psi_tab, phi_tab
+    X = [ phi_tab' ; psi_tab']
+    [a,b,sig] = reglin(X, R)
+    
+    //taux zero-coupons de Nelson Siegel
+    NSrates = a*X+b*ones(1,nb_de_termes)
+
+    temps = linspace(1,nb_de_periodes, nb_de_periodes)'
+    plot(temps,R(:,t), 'b', temps,  NSrates(:,t), 'g') 
+    legends(['Taux réels' 'Taux Nelson Siegel'], [2,3],4)
+    xtitle('Comparaison en t =' + string(t), 'temps', 'taux')
+endfunction
 //remarque: taux négatifs
 
 //calibration du vasicek
