@@ -2,8 +2,6 @@
 
 [Value,TextInd] = xls_read(fd,Sheetpos(1))
 
-//acces a la i eme colonne: Value(i,:)
-//acces a la i eme ligne: Value(,:i)
 
 //cration matrice taux zeros coupons R(t,t+T)
 R = Value'
@@ -14,8 +12,6 @@ mclose(fd)
 R(1,:) = []
 R(:,1) = []
 
-nb_de_termes  = length(R(1,:))
-nb_de_periodes = length((R(:,1)))
 
 function [phit]=phi(t)
     phit = (1-exp(-t))/t
@@ -27,6 +23,7 @@ endfunction
 
 function [erreur] = erreur_quadratique(a,b,R,tau)
     erreur = 0
+    nb_de_periodes = length((R(:,1)))
     for t=1:nb_de_periodes
         for T=1:nb_de_termes
             R_NS_t_T = b(t)+a(t,1)*phi(T/tau)+a(t,2)*psi(T/tau)
@@ -35,9 +32,6 @@ function [erreur] = erreur_quadratique(a,b,R,tau)
     end
 endfunction
 
-tau_init = 0.1
-tau_final = 10
-step = 0.5
 
 function [tau_min, taux_courts] = recherche_tau_opt(R, tau_init, tau_final, step)
     
@@ -107,7 +101,7 @@ function plotNSvsReel(R, tau, t)
     legends(['Taux réels' 'Taux Nelson Siegel'], [2,3],4)
     xtitle('Comparaison en t =' + string(t), 'temps', 'taux')
 endfunction
-//remarque: taux négatifs
+
 
 //calibration du vasicek
 function [r_infini, kappa, sigma_r]=calibration_vasicek(taux_courts)
@@ -125,6 +119,18 @@ function [r_infini, kappa, sigma_r]=calibration_vasicek(taux_courts)
         sigma_r = 0
     end
     
-    
 endfunction
 
+//--> application:
+
+tau_init = 2
+tau_final = 10
+step = 0.01
+
+[tau_min, taux_courts] = recherche_tau_opt(R, tau_init, tau_final, step)
+[r_infini, kappa, sigma_r]=calibration_vasicek(taux_courts)
+
+mprintf("tau_min = %f \n",tau_min);
+mprintf("r_infini = %f \n",r_infini);
+mprintf("kappa = %f \n",kappa);
+mprintf("sigma_r = %f \n",sigma_r);
