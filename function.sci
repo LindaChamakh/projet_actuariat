@@ -2,8 +2,8 @@ clear
 function [y] = f(x,r)
     //Taux minimum garanti
     TMG = 0.025;
-    y = max(x+r,TMG);
-//    y = x+r;
+//    y = max(x+r,TMG);
+    y = x+r;
 endfunction
 
 function [y] = g(x)
@@ -11,8 +11,8 @@ function [y] = g(x)
     mu_i = 0.05;
     eta = 2;
     //y = min(1,max(0,mu_c(x')+mu_i));
-    //y = mu_i - eta*x';
-    y = mu_i + min(x',0);
+    y = mu_i - eta*x';
+//    y = mu_i + min(x',0);
 endfunction
 
 function [y] = mu_c(x)
@@ -53,21 +53,14 @@ function [phi,dx,dr,x,r] = edp(k_r,r_inf,r_0,sigma_r,k_x,x_inf,x_0,sigma_x,rho_x
     r = linspace(a_r + dr,b_r - dr,M_2-1);
     
     //Nb de pas de temps avec condition CFL
-    //dt = T/N;
-//    printf("ici : %f\n",- k_r*(r_inf-max(r))*0.5/dr - k_x*(x_inf-max(x))*0.5/dx - sigma_r*sigma_r*0.5/(dr*dr) - sigma_x*sigma_x*0.5/(dx*dx) - 0.5*rho_xr*sigma_x*sigma_r/dx/dr + 0.5*(max(f(x,r))-max(r)-max(g(x))));
     dt = 1/(- k_r*(r_inf-max(r))*0.5/dr - k_x*(x_inf-max(x))*0.5/dx - sigma_r*sigma_r*0.5/(dr*dr) - sigma_x*sigma_x*0.5/(dx*dx) - 0.5*rho_xr*sigma_x*sigma_r/dx/dr + 0.5*(max(f(x,r))-max(r)-max(g(x))));
-    if dt <= 0 
-        printf("dt négatif : %f\n",dt);
-    end
+
     dt = abs(dt);/// - 0.000001;
     //vecteur contenant la solution à tous les temps
     phi_prec = ones((M_1-1)*(M_2-1),1);//cond initiale
     phi = ones((M_1-1)*(M_2-1),1);
-    //phi = ones((M_1-1)*(M_2-1),N+1);
 
     //Remplissage des matrices du système linéaire
-    //A = zeros((M_1-1)*(M_2-1),(M_1-1)*(M_2-1));
-    //B = zeros((M_1-1)*(M_2-1),(M_1-1)*(M_2-1));
     A = sparse ([], [], [(M_1-1)*(M_2-1),(M_1-1)*(M_2-1)]);
     B = sparse ([], [], [(M_1-1)*(M_2-1),(M_1-1)*(M_2-1)]);
     i = 1;
@@ -101,8 +94,6 @@ function [phi,dx,dr,x,r] = edp(k_r,r_inf,r_0,sigma_r,k_x,x_inf,x_0,sigma_x,rho_x
             i = 1;
         end
     end
-    //A=sparse(A);
-    //B=sparse(B);
 
     //Approximation de l'EDP par différences finie en utilisant le schéma de crank-nicolson
     // A*phi^{n+1} = B*phi^n + G
@@ -112,10 +103,7 @@ function [phi,dx,dr,x,r] = edp(k_r,r_inf,r_0,sigma_r,k_x,x_inf,x_0,sigma_x,rho_x
     end
     t = dt;
     while t < T
-        //b = B*phi(:,t) + G;
-        //tic();
-        //phi(:,t+1) = umfpack(A,'\',b);
-        //printf('\ntemps nécessaire à la résolution du système : %.3f\n tn = %.3f',toc(),t*T/N);
+
         b = B*phi_prec + G;
         phi = umfpack(A,'\',b);
         phi_prec = phi;
