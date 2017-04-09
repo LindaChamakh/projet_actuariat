@@ -76,10 +76,10 @@ function [g]=g(x)
 endfunction
 
 M=10000;//taille échantillon Monte Carlo 
-A_0 = 101479200/1000000;//ACTIF: obligations, actions, immobilier à t=0
-E_0 = 57238200/1000000;//PASSIF: dettes vis-à-vis des actionnaires
+A_0 = 101479200;//ACTIF: obligations, actions, immobilier à t=0
+E_0 = 57238200;//PASSIF: dettes vis-à-vis des actionnaires
 //L0 = ;//PASSIF: dettes vis-à-vis des assurés //INUTILE
-P = 36000000/1000000;
+P = 36000000;
 
 //Deux gaussiennes indépendantes
 Gr = rand(M,1,"normal");
@@ -121,4 +121,5 @@ Nb_simul = linspace(1,M,M)'
 plot(Nb_simul, E_0-L)
 //hold on
 plot(M*0.005, SCR_0, 'r*')
-xtitle('E_0-exp(r_0)*E_1 version formules fermées')
+xlabel('N',"fontsize",6)
+ylabel('$ E_0 - e^{-r_0}E_1 $',"fontsize",6)
