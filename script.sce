@@ -1,108 +1,5 @@
-clear
+//clear
 stacksize max
-
-function [y] = f(x,r)
-    //Taux minimum garanti
-    TMG = 0.015;
-    y = x+r;//max(x+r,TMG);
-endfunction
-
-function [y] = g(x)
-    //Rachat structurel
-    mu_i = 0.05;
-    eta = 2;
-    y = mu_i - eta*x';//max(-x',0);
-endfunction
-
-function [y] = mu_c(x)
-    //Parametres taux de rachat
-    alpha = -0.05;
-    beta_ = -0.01;
-    gamma_ = 0.01;
-    delta = 0.03;
-    mu_min = -0.05;
-    mu_max = 0.3;
-    x(find(x<=alpha)) = mu_max;
-    x(find(x>=alpha & x <= beta_)) = mu_max*((x(find(x>=alpha & x <= beta_))-beta_)/(alpha-beta_));
-    x(find(x>=beta_ & x <= gamma_)) = 0;
-    x(find(x>=delta & x <= gamma_)) = mu_max*((x(find(x>=alpha & x <= beta_))-gamma_)/(delta-gamma_));
-    x(find(x>=gamma_)) = mu_min;
-endfunction
-
-function [phi,dx,dr,x,r] = edp(k_r,r_inf,r_0,sigma_r,k_x,x_inf,x_0,sigma_x,rho_xr,T,N,M_1,M_2)
-    //Nb de pas de temps
-    dt = T/N;
-    //Nb de pas en x
-    L_1 = 45*sigma_x*sqrt((1-exp(-2*k_x))/2*k_x);
-    a_x = exp(-k_x)*(x_0 - x_inf) + x_inf - L_1/2;
-    b_x = exp(-k_x)*(x_0 - x_inf) + x_inf + L_1/2;
-    dx = L_1/M_1;
-    //Nb de pas en r
-    L_2 = 45*sigma_r*sqrt((1-exp(-2*k_r))/2*k_r);
-    a_r = exp(-k_r)*(r_0 - r_inf) + r_inf - L_2/2;
-    b_r = exp(-k_r)*(r_0 - r_inf) + r_inf + L_2/2;
-    dr = L_2/M_2;
-
-    //discrétisation de l'espace
-    x = linspace(a_x + dx,b_x - dx,M_1-1);
-    r = linspace(a_r + dr,b_r - dr,M_2-1);
-
-    //vecteur contenant la solution au temps actuel et au temps précédent
-    phi_prec = ones((M_1-1)*(M_2-1),1);//cond initiale
-    phi = zeros((M_1-1)*(M_2-1),1);
-
-    //Remplissage des matrices du système linéaire
-    A = zeros((M_1-1)*(M_2-1),(M_1-1)*(M_2-1));
-    B = zeros((M_1-1)*(M_2-1),(M_1-1)*(M_2-1));
-    i = 1;
-    j = 1;
-    for l=1:(M_1-1)*(M_2-1)
-        //disp(i)
-        //disp(j)
-        A(l,l) = 1/dt + k_r*(r_inf-r(j))*0.5/dr + k_x*(x_inf-x(i))*0.5/dx + sigma_r*sigma_r*0.5/(dr*dr) + sigma_x*sigma_x*0.5/(dx*dx) + rho_xr*sigma_x*sigma_r/dx/dr - 0.5*(f(x(i),r(j))-r(j)-g(x(i)));
-        B(l,l) = 1/dt - k_r*(r_inf-r(j))*0.5/dr - k_x*(x_inf-x(i))*0.5/dx - sigma_r*sigma_r*0.5/(dr*dr) - sigma_x*sigma_x*0.5/(dx*dx) - rho_xr*sigma_x*sigma_r/dx/dr + 0.5*(f(x(i),r(j))-r(j)-g(x(i)));
-        if j > 1
-            //disp(l)
-            A(l,l-M_1+1) = - sigma_r*sigma_r*0.25/dr/dr;
-            B(l,l-M_1+1) = sigma_r*sigma_r*0.25/dr/dr;
-        end
-        if i > 1
-            A(l,l-1) = - sigma_x*sigma_x*0.25/dx/dx;
-            B(l,l-1) = sigma_x*sigma_x*0.25/dx/dx;
-        end
-        if  i < M_1-1
-            A(l,l+1) = - sigma_x*sigma_x*0.25/dx/dx -k_x*(x_inf-x(i))*0.5/dx - rho_xr*sigma_x*sigma_r/dx/dr;
-            B(l,l+1) = sigma_x*sigma_x*0.25/dx/dx + k_x*(x_inf-x(i))*0.5/dx + rho_xr*sigma_x*sigma_r/dx/dr;
-        end
-        if j < M_2-1
-            A(l,l+M_1-1) = - sigma_r*sigma_r*0.25/dr/dr -k_r*(r_inf-r(j))*0.5/dr - rho_xr*sigma_x*sigma_r/dx/dr;
-            B(l,l+M_1-1) =  sigma_r*sigma_r*0.25/dr/dr + k_r*(r_inf-r(j))*0.5/dr + rho_xr*sigma_x*sigma_r/dx/dr;
-        end
-        if j < M_2-1 & i < M_1-1
-            A(l,l+M_1) = rho_xr*sigma_x*sigma_r/dx/dr;
-            B(l,l+M_1) = -rho_xr*sigma_x*sigma_r/dx/dr;
-        end
-        i=i+1;
-        if l == j*(M_1-1)
-            j = j+1;
-            i = 1;
-        end
-    end
-
-    //Approximation de l'EDP par différences finie en utilisant le schéma de crank-nicolson
-    // A*phi^{n+1} = B*phi^n + G
-    G = g(x);
-    for i=1:M_2-2
-        G = [G;g(x)];
-    end
-
-    for t=1:N
-        b = B*phi_prec + G;
-        phi = A\b;
-        phi_prec = phi;
-    end
-endfunction
-
 
 //Input:
 //Taux d'interet risque neutre par calibration
@@ -115,7 +12,7 @@ k_x = 0.3;
 x_inf = -0.01;
 x_0 = 0.02;
 sigma_x = 0.008;
-//Log return of the asser
+//Log return of the asset
 mu_a = 0.04;
 sigma_a = 0.06;
 //Correlation
@@ -124,16 +21,21 @@ rho_as = 0.95;
 rho_ar = 0.25;
 //Maturité
 T = 1;
+
+
+
 //nb de pas dans l'EDP
 N = 60;
 M_1 = 30;
 M_2 = 30;
 
+//Résolution de l'EDP pour approcher phi
 [phi,dx,dr,x,r] = edp(k_r,r_inf,r_0,sigma_r,k_x,x_inf,x_0,sigma_x,rho_xr,T,N,M_1,M_2);
+//phi = Phi(:,N+1);
 
 
 
-M=10000;//taille échantillon Monte Carlo 
+M=100000;//taille échantillon Monte Carlo 
 A_0 = 101479200;//ACTIF: obligations, actions, immobilier à t=0
 E_0 = 57238200;//PASSIF: dettes vis-à-vis des actionnaires
 //L0 = ;//PASSIF: dettes vis-à-vis des assurés //INUTILE
@@ -180,10 +82,19 @@ L = exp(-r_0).*E_1;
 
 //Statistique d'ordre de L (trier L)
 L = gsort(L,'g','i');
-mprintf("VaR = %f \n",L(ceil(N*0.005)));
+mprintf("VaR = %f \n",L(ceil(M*0.005)));
 
 //Calcul de SCR_0
-SCR_0 = E_0 - L(ceil(N*0.005));
+SCR_0 = E_0 - L(ceil(M*0.005));
 mprintf("SCR_0 = %f \n",SCR_0);
+
+//Intervalle de confiance pour la VAR
+N = linspace(1,M,M);
+y = cdfbin("PQ",N,M*ones(1,M),(1-0.005)*ones(1,M),0.005*ones(1,M));
+
+mprintf("borne inf et sup à environ 95: inf = %f,\t sup = %f\n",L(M-find(y>=0.9,1)),L(M-find(y>=0.05,1)));
+
+
+
 
  
