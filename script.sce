@@ -26,8 +26,8 @@ T = 1;
 
 //nb de pas dans l'EDP
 N = 60;
-M_1 = 30;
-M_2 = 30;
+M_1 = 15;
+M_2 = 15;
 
 //Résolution de l'EDP pour approcher phi
 [phi,dx,dr,x,r] = edp(k_r,r_inf,r_0,sigma_r,k_x,x_inf,x_0,sigma_x,rho_xr,T,N,M_1,M_2);
@@ -57,15 +57,10 @@ A_1 = A_0.*(1 + R_1);
 BE = zeros(M,1);
 g_0 = g(find(x<=x_0 & x>(x_0 -dx)));
 for i=1:M
-    ind_r = find(r<=r_1(i) & r>(r_1(i) -dr));
-    ind_x = find(x<=x_1(i) & x>(x_1(i) -dx));
+    ind_r = find(r<r_1(i) & r>(r_1(i) -dr));
+    ind_x = find(x<x_1(i) & x>(x_1(i) -dx));
     phi_1 = phi(ind_r*(M_1-1) + ind_x);
     BE(i) = P*exp(f(x_0,r_0) - g(x_0))*phi_1;
-    if (BE(i) == 0)
-        disp(ind_r);
-        disp(ind_x);
-        disp(phi_1);
-    end
 end
 
 //Affichage de la moyenne et de l'écart type de BE
@@ -94,7 +89,7 @@ y = cdfbin("PQ",N,M*ones(1,M),(1-0.005)*ones(1,M),0.005*ones(1,M));
 
 mprintf("borne inf et sup à environ 95: inf = %f,\t sup = %f\n",L(M-find(y>=0.9,1)),L(M-find(y>=0.05,1)));
 
-
-
-
- 
+plot(E_0 - L);
+plot(SCR_0,'ro')
+xlabel('N',"fontsize",6)
+ylabel('$ E_0 - e^{-r_0}E_1 $',"fontsize",6)
